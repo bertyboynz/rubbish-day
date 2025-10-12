@@ -75,8 +75,8 @@ def rubbish_day():
     httpheaders = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
     }
-    baseUrl = 'https://www.aucklandcouncil.govt.nz'
-    thisUrl = '/rubbish-recycling/rubbish-recycling-collections/Pages/collection-day-detail.aspx?an='+addressId
+    baseUrl = 'https://new.aucklandcouncil.govt.nz'
+    thisUrl = '/en/rubbish-recycling/rubbish-recycling-collections/rubbish-recycling-collection-days/'+addressId+'.html'
     url = baseUrl+thisUrl
     app.logger.debug(scriptName+': Scraping page from '+thisUrl)
     try:
@@ -91,39 +91,93 @@ def rubbish_day():
         return json.dumps(output)
 
     soup = BeautifulSoup(response.content, 'html.parser')
-    addressBlock = soup.find_all(attrs={'class': 'm-b-2'})
-    collectionInfo  = soup.find_all(attrs={'class': 'collectionDayDate'})
+    # addressBlock = soup.find_all(attrs={'class': 'm-b-2'})
+    address_block = soup.find("h2")
+    if not address_block:
+        return "Unknown address"
+    else: 
+       street = address_block.find("span", class_="heading")
+       suburb = address_block.find("span", class_="subheading")
+       if street and suburb:
+           addressBlock = f"{street.get_text(strip=True)}, {suburb.get_text(strip=True)}"
+       elif street:
+           addressBlock = street.get_text(strip=True)
+       elif suburb:
+           addressBlock = suburb.get_text(strip=True)
+       else:
+           addressBlock = address_block.get_text(strip=True)
+
+    # collectionInfo  = soup.find_all(attrs={'class': 'collectionDayDate'})
     
-    rubbishInfo = collectionInfo[0]
-    foodscrapsInfo = collectionInfo[1]
-    recycleInfo = collectionInfo[2]
+    # rubbishInfo = collectionInfo[0]
+    # foodscrapsInfo = collectionInfo[1]
+    # recycleInfo = collectionInfo[2]
     
-    # RUBBISH INFO
-    rubbishDate = rubbishInfo.find("strong").get_text()
-    if debugmode :
-        app.logger.debug(scriptName+": > INFO: Rubbish Collection info: "+str(rubbishInfo)+'\n')
-        app.logger.debug(scriptName+": > INFO: Next rubbish collection date is -  "+str(rubbishDate)+'\n')
+    # # RUBBISH INFO
+    # rubbishDate = rubbishInfo.find("strong").get_text()
+    # if debugmode :
+    #     app.logger.debug(scriptName+": > INFO: Rubbish Collection info: "+str(rubbishInfo)+'\n')
+    #     app.logger.debug(scriptName+": > INFO: Next rubbish collection date is -  "+str(rubbishDate)+'\n')
     
-    # FOODSCRAPS INFO
-    foodscrapsDate = foodscrapsInfo.find("strong").get_text()
-    if debugmode :
-        app.logger.debug(scriptName+": > INFO: Foodscraps Collection info: "+str(foodscrapsInfo)+'\n')
-        app.logger.debug(scriptName+": > INFO: Next foodscraps collection date is -  "+str(foodscrapsDate)+'\n')
+    # # FOODSCRAPS INFO
+    # foodscrapsDate = foodscrapsInfo.find("strong").get_text()
+    # if debugmode :
+    #     app.logger.debug(scriptName+": > INFO: Foodscraps Collection info: "+str(foodscrapsInfo)+'\n')
+    #     app.logger.debug(scriptName+": > INFO: Next foodscraps collection date is -  "+str(foodscrapsDate)+'\n')
     
-    # RECYCLE INFO
-    recycleDate = recycleInfo.find("strong").get_text()
-    if debugmode :
-        app.logger.debug(scriptName+": > INFO: Recycle Collection info: "+str(recycleInfo)+'\n')
-        app.logger.debug(scriptName+": > INFO: Next recycle collection date is "+str(recycleDate)+'\n')
+    # # RECYCLE INFO
+    # recycleDate = recycleInfo.find("strong").get_text()
+    # if debugmode :
+    #     app.logger.debug(scriptName+": > INFO: Recycle Collection info: "+str(recycleInfo)+'\n')
+    #     app.logger.debug(scriptName+": > INFO: Next recycle collection date is "+str(recycleDate)+'\n')
     
-    # ADDRESS INFO
-    if debugmode :
-        app.logger.debug(scriptName+": > INFO: Address is "+str(addressBlock[0].string)+'\n')
-    
+    # # ADDRESS INFO
+    # if debugmode :
+    #     app.logger.debug(scriptName+": > INFO: Address is "+str(addressBlock[0].string)+'\n')
+
+
+    rubbishDate, recycleDate = None, None
+
+    collection_cards = soup.find_all("div", class_="acpl-schedule-card")
+    collection_info = []
+    for card in collection_cards:
+        bin_entries = card.find_all("p", class_="mb-0 lead")
+        for entry in bin_entries:
+            collection_info.append(entry)
+
+    # Parse each collection entry and assign to the correct type based on keywords
+    for entry in collection_info:
+        text = entry.get_text(strip=True)
+        if "rubbish" in text.lower():
+            rubbishDate = text.split(":", 1)[-1].strip() if ":" in text else text
+            # raw_date = text.split(":", 1)[-1].strip() if ":" in text else text
+            # rubbish = self.parse_collection_date(raw_date)
+        elif "recycling" in text.lower():
+            recycleDate = text.split(":", 1)[-1].strip() if ":" in text else text
+            # raw_date = text.split(":", 1)[-1].strip() if ":" in text else text
+            # recycling = self.parse_collection_date(raw_date)
+        # elif "food scraps" in text.lower():
+            # raw_date = text.split(":", 1)[-1].strip() if ":" in text else text
+            # food_scraps = self.parse_collection_date(raw_date)
+
+    # Determine next collection type
+    try:
+        if rubbishDate and recycleDate:
+            if rubbishDate == recycleDate:
+                next_collection_type = "Rubbish & Recycling"
+            else:
+                next_collection_type = "Rubbish"
+        elif rubbishDate:
+                next_collection_type = "Rubbish"
+        else:
+            next_collection_type = None
+    except Exception:
+        next_collection_type = None
+
     output = {}
     
     output['datetime'] = datetime.strptime(rubbishDate+datetime.now().astimezone().strftime(' 07 %Y %z'), '%A %d %B %H %Y %z').strftime('%Y-%m-%dT%H:%M:%S%z')
-    output['address'] = addressBlock[0].string
+    output['address'] = addressBlock
     output['data_retrieved_datetime'] = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
     
     if rubbishDate == recycleDate:
