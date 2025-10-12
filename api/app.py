@@ -60,7 +60,7 @@ def rubbish_day():
     # Add '&debug' to url to log richer info in Flask logs
     debugmode = request.args.get('debug')
     if debugmode is None :
-        debugmode = False
+        debugmode = True ######## change this guy right here
     else :
         debugmode = True
 
@@ -73,7 +73,7 @@ def rubbish_day():
     if addressId is None or len(addressId) != 11 :
         return json.dumps(output)
     httpheaders = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
     }
     baseUrl = 'https://new.aucklandcouncil.govt.nz'
     thisUrl = '/en/rubbish-recycling/rubbish-recycling-collections/rubbish-recycling-collection-days/'+addressId+'.html'
