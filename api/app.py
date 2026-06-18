@@ -176,7 +176,8 @@ def rubbish_day():
 
     output = {}
     
-    output['datetime'] = datetime.strptime(rubbishDate+datetime.now().astimezone().strftime(' 07 %Y %z'), '%A %d %B %H %Y %z').strftime('%Y-%m-%dT%H:%M:%S%z')
+    activeDateStr = recycleDate if rubbishDate == recycleDate else rubbishDate
+    output['datetime'] = datetime.strptime(activeDateStr.replace(',', '')+datetime.now().astimezone().strftime(' 07 %Y %z'), '%A %d %B %H %Y %z').strftime('%Y-%m-%dT%H:%M:%S%z')
     output['address'] = addressBlock
     output['data_retrieved_datetime'] = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
     
