@@ -174,23 +174,28 @@ def rubbish_day():
     except Exception:
         next_collection_type = None
 
-    output = {}
-    
-    activeDateStr = recycleDate if rubbishDate == recycleDate else rubbishDate
-    output['datetime'] = datetime.strptime(activeDateStr.replace(',', '')+datetime.now().astimezone().strftime(' 07 %Y %z'), '%A %d %B %H %Y %z').strftime('%Y-%m-%dT%H:%M:%S%z')
+output = {}
     output['address'] = addressBlock
     output['data_retrieved_datetime'] = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+
+    if rubbishDate:
+        output['rubbish_date'] = rubbishDate
+        output['rubbish_datetime'] = datetime.strptime(rubbishDate.replace(',', '')+datetime.now().astimezone().strftime(' 07 %Y %z'), '%A %d %B %H %Y %z').strftime('%Y-%m-%dT%H:%M:%S%z')
     
+    if recycleDate:
+        output['recycle_date'] = recycleDate
+        output['recycle_datetime'] = datetime.strptime(recycleDate.replace(',', '')+datetime.now().astimezone().strftime(' 07 %Y %z'), '%A %d %B %H %Y %z').strftime('%Y-%m-%dT%H:%M:%S%z')
+
+    # Keep legacy fields for backwards compatibility
+    activeDateStr = recycleDate if rubbishDate == recycleDate else rubbishDate
+    output['datetime'] = datetime.strptime(activeDateStr.replace(',', '')+datetime.now().astimezone().strftime(' 07 %Y %z'), '%A %d %B %H %Y %z').strftime('%Y-%m-%dT%H:%M:%S%z')
+    output['value'] = activeDateStr
     if rubbishDate == recycleDate:
-        output['value'] = recycleDate
         output['collection_type'] = 'Recycle'
         output['icon'] = 'mdi:recycle'
-        app.logger.debug(scriptName+": > Collection type is Rubbish and Recycling"+'\n')
-    else :
-        output['value'] = rubbishDate
+    else:
         output['collection_type'] = 'Rubbish'
         output['icon'] = 'mdi:trash-can'
-        app.logger.debug(scriptName+": > Collection type is Rubbish"+'\n')
-    
+
     app.logger.debug(scriptName+': Rubbish collection information successfully fetched\n')
     return json.dumps(output)
