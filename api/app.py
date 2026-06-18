@@ -174,7 +174,7 @@ def rubbish_day():
     except Exception:
         next_collection_type = None
 
-output = {}
+    output = {}
     output['address'] = addressBlock
     output['data_retrieved_datetime'] = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
 
